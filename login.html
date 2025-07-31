@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Login / Sign Up - Bujji AI</title>
+  <link rel="icon" type="image/x-icon" href="/static/favicon1.ico">
+  <link rel="stylesheet" href="/static/style.css">
+  <style>
+    .auth-container {
+      max-width: 340px;
+      margin: 120px auto;
+      padding: 32px 24px;
+      background: rgba(255,255,255,0.85);
+      border-radius: 16px;
+      box-shadow: 0 4px 24px #0002;
+      text-align: center;
+    }
+    .auth-container input {
+      width: 90%;
+      padding: 12px;
+      margin: 12px 0;
+      border-radius: 8px;
+      border: 1px solid #ffe066;
+      font-size: 1rem;
+    }
+    .auth-container button {
+      padding: 10px 24px;
+      border-radius: 8px;
+      border: none;
+      background: linear-gradient(90deg, #ffe066 0%, #ff6a00 100%);
+      color: #222;
+      font-size: 1.1rem;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 16px;
+    }
+    .switch-link {
+      color: #ff6a00;
+      cursor: pointer;
+      text-decoration: underline;
+      font-size: 0.95rem;
+      margin-top: 12px;
+      display: inline-block;
+    }
+  </style>
+</head>
+<body>
+  <div class="auth-container">
+    <!-- Login Form -->
+    <div id="login-form">
+      <h2>Login to Bujji AI</h2>
+      <input type="text" id="login-username" placeholder="Username" autocomplete="off" required>
+      <input type="password" id="login-password" placeholder="Password" autocomplete="off" required>
+      <button id="login-btn">Login</button>
+      <div id="login-msg" style="color:#cc2b5e;margin-top:12px;"></div>
+      <span class="switch-link" onclick="showSignUp()">Don't have an account? Sign Up</span>
+    </div>
+
+    <!-- Sign Up Form -->
+    <div id="signup-form" style="display:none;">
+      <h2>Sign Up for Bujji AI</h2>
+      <input type="text" id="signup-username" placeholder="Choose Username" autocomplete="off" required>
+      <input type="password" id="signup-password" placeholder="Choose Password" autocomplete="off" required>
+      <button id="signup-btn">Sign Up</button>
+      <div id="signup-msg" style="color:#56ab2f;margin-top:12px;"></div>
+      <span class="switch-link" onclick="showLogin()">Already have an account? Login</span>
+    </div>
+  </div>
+
+  <script>
+    // Toggle between login and sign up
+    function showSignUp() {
+      document.getElementById('login-form').style.display = 'none';
+      document.getElementById('signup-form').style.display = 'block';
+    }
+
+    function showLogin() {
+      document.getElementById('signup-form').style.display = 'none';
+      document.getElementById('login-form').style.display = 'block';
+    }
+
+    // LOGIN
+    document.getElementById('login-btn').onclick = function () {
+      const user = document.getElementById('login-username').value.trim();
+      const pass = document.getElementById('login-password').value.trim();
+      const storedUser = localStorage.getItem("bujji_user");
+      const storedPass = localStorage.getItem("bujji_pass");
+
+      if (user === storedUser && pass === storedPass) {
+        localStorage.setItem("loggedIn", "true");
+        window.location.href = "/chat";
+      } else {
+        document.getElementById('login-msg').textContent = "❌ Invalid credentials!";
+      }
+    };
+
+    // SIGNUP
+    document.getElementById('signup-btn').onclick = function () {
+      const user = document.getElementById('signup-username').value.trim();
+      const pass = document.getElementById('signup-password').value.trim();
+      if (user && pass) {
+        localStorage.setItem("bujji_user", user);
+        localStorage.setItem("bujji_pass", pass);
+        document.getElementById('signup-msg').textContent = "✅ Sign up successful! Please log in.";
+        setTimeout(showLogin, 1000);
+      } else {
+        document.getElementById('signup-msg').textContent = "⚠️ Please enter username and password.";
+      }
+    };
+  </script>
+</body>
+</html>

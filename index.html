@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Bujji AI</title>
+  <link rel="stylesheet" href="/static/style.css" />
+  <link rel="icon" type="image/x-icon" href="/static/favicon1.ico">
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+  <!-- Redirect to login if not logged in -->
+  <script>
+    if (!localStorage.getItem("loggedIn")) {
+      window.location.href = "/";
+    }
+  </script>
+
+  <!-- Top bar -->
+  <div class="top-bar">
+    <div class="top-left-title"> HI, I AM BUJJI</div>
+    <div class="top-right-controls">
+      <button id="theme-toggle" title="Toggle theme"><span id="theme-icon">🌙</span></button>
+      <button id="mode-toggle" class="mode-btn">Translate Mode</button>
+    </div>
+  </div>
+
+  <!-- Main content -->
+  <div class="main-content">
+    <div id="loader" class="loader" style="display:none;"></div>
+    <div class="chat-row">
+      <div class="avatar-side ai-avatar-col">
+        <img src="/static/bujjiAI.png" class="avatar animated-avatar" alt="Bujji AI" />
+        <div class="avatar-label">Bujji</div>
+      </div>
+      <div class="chat-box-container">
+        <div id="chat-box" class="chat-box"></div>
+      </div>
+      <div class="avatar-side user-avatar-col">
+        <img src="/static/user.jpg" class="avatar animated-avatar" alt="You" />
+        <div class="avatar-label">You</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Input controls -->
+  <div class="input-row">
+    <input type="text" id="user-input" placeholder="Type your message..." autocomplete="off" />
+
+    <!-- Translation target language -->
+    <select id="language-select" style="display:none;">
+      <option value="en">English</option>
+      <option value="hi">Hindi</option>
+      <option value="te">Telugu</option>
+      <option value="ta">Tamil</option>
+      <option value="kn">Kannada</option>
+      <option value="ml">Malayalam</option>
+      <option value="bn">Bengali</option>
+      <option value="gu">Gujarati</option>
+      <option value="pa">Punjabi</option>
+      <option value="ur">Urdu</option>
+      <option value="es">Spanish</option>
+      <option value="fr">French</option>
+      <option value="de">German</option>
+      <option value="it">Italian</option>
+      <option value="pt">Portuguese</option>
+      <option value="ru">Russian</option>
+      <option value="zh">Chinese</option>
+      <option value="ja">Japanese</option>
+      <option value="ko">Korean</option>
+      <option value="ar">Arabic</option>
+    </select>
+
+    <!-- UI language selector -->
+    <select id="ui-language-select" title="Change UI Language">
+      <option value="en">English</option>
+      <option value="te">తెలుగు</option>
+      <option value="hi">हिन्दी</option>
+      <option value="ta">தமிழ்</option>
+      <option value="kn">ಕನ್ನಡ</option>
+      <option value="ml">മലയാളം</option>
+      <option value="bn">বাঙালি</option>
+      <option value="gu">ગુજરાતી</option>
+      <option value="it">Italiano</option>
+      <option value="pt">Português</option>
+      <option value="fr">Français</option>
+    </select>
+
+    <!-- Buttons -->
+    <button id="send-btn" title="Send">Send</button>
+    <button id="mic-btn" title="Speak">Mic</button>
+    <button id="clear-btn" title="Clear">Clear</button>
+    <button id="stop-btn" title="Stop AI Voice">Stop</button>
+  </div>
+
+  <!-- JS -->
+  <script src="/static/script.js"></script>
+</body>
+</html>
+
