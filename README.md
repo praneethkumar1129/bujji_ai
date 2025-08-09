@@ -2,14 +2,14 @@
 
 ![Bujji Banner](bujjiAI.png)
 
-Bujji AI is a powerful, voice-enabled, multilingual personal assistant built with **FastAPI + JavaScript**. Designed with a modern UI and natural interaction in mind, Bujji is here to assist you in the most human-like way possible.
+Bujji AI is a powerful, voice-enabled, multilingual personal assistant built with **FastAPI + JavaScript**. Designed with a modern UI and natural interaction , Bujji is here to assist you in the most human-like way possible.
 
 ---
 
 ## 🚀 Features
 
 ✅ Simple signup & Login
-✅ UI language chnage mode
+✅ UI language change mode
 ✅ Wellness Conversations  
 ✅ Voice-Enabled Input & Output  
 ✅ Language Translation (e.g., Hindi, Telugu, etc.)  
