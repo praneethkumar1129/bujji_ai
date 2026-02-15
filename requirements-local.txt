@@ -1,6 +1,8 @@
 fastapi==0.115.12
+uvicorn==0.34.2
 python-dotenv==1.1.0
+transformers==4.52.4
+torch==2.7.1
 requests==2.32.3
 pydantic==2.11.5
 motor==3.6.0
-mangum==0.17.0
