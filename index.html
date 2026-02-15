@@ -21,11 +21,16 @@
     <div class="top-right-controls">
       <button id="theme-toggle" title="Toggle theme"><span id="theme-icon">🌙</span></button>
       <button id="mode-toggle" class="mode-btn">Translate Mode</button>
+      <button id="logout-btn" class="mode-btn" style="background: linear-gradient(135deg, #ff6b6b, #ee5a6f);">Logout</button>
     </div>
   </div>
 
   <!-- Main content -->
   <div class="main-content">
+    <div class="sidebar">
+      <h3>Chat History</h3>
+      <div id="history-list"></div>
+    </div>
     <div id="loader" class="loader" style="display:none;"></div>
     <div class="chat-row">
       <div class="avatar-side ai-avatar-col">

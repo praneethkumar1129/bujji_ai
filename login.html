@@ -33,6 +33,15 @@
       font-weight: bold;
       cursor: pointer;
       margin-top: 16px;
+      transition: all 0.3s;
+    }
+    .auth-container button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(255, 106, 0, 0.4);
+    }
+    .auth-container button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
     }
     .switch-link {
       color: #ff6a00;
@@ -46,7 +55,6 @@
 </head>
 <body>
   <div class="auth-container">
-    <!-- Login Form -->
     <div id="login-form">
       <h2>Login to Bujji AI</h2>
       <input type="text" id="login-username" placeholder="Username" autocomplete="off" required>
@@ -56,7 +64,6 @@
       <span class="switch-link" onclick="showSignUp()">Don't have an account? Sign Up</span>
     </div>
 
-    <!-- Sign Up Form -->
     <div id="signup-form" style="display:none;">
       <h2>Sign Up for Bujji AI</h2>
       <input type="text" id="signup-username" placeholder="Choose Username" autocomplete="off" required>
@@ -68,45 +75,95 @@
   </div>
 
   <script>
-    // Toggle between login and sign up
     function showSignUp() {
       document.getElementById('login-form').style.display = 'none';
       document.getElementById('signup-form').style.display = 'block';
+      document.getElementById('login-msg').textContent = '';
     }
 
     function showLogin() {
       document.getElementById('signup-form').style.display = 'none';
       document.getElementById('login-form').style.display = 'block';
+      document.getElementById('signup-msg').textContent = '';
     }
 
-    // LOGIN
-    document.getElementById('login-btn').onclick = function () {
-      const user = document.getElementById('login-username').value.trim();
-      const pass = document.getElementById('login-password').value.trim();
-      const storedUser = localStorage.getItem("bujji_user");
-      const storedPass = localStorage.getItem("bujji_pass");
-
-      if (user === storedUser && pass === storedPass) {
-        localStorage.setItem("loggedIn", "true");
-        window.location.href = "/chat";
-      } else {
-        document.getElementById('login-msg').textContent = "❌ Invalid credentials!";
+    document.getElementById('login-btn').onclick = async function () {
+      const username = document.getElementById('login-username').value.trim();
+      const password = document.getElementById('login-password').value.trim();
+      
+      if (!username || !password) {
+        document.getElementById('login-msg').textContent = '⚠️ Please enter both username and password';
+        return;
+      }
+      
+      try {
+        const res = await fetch('/api/login', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({username, password})
+        });
+        const data = await res.json();
+        
+        if (res.ok) {
+          localStorage.setItem('loggedIn', 'true');
+          localStorage.setItem('username', username);
+          window.location.href = '/chat';
+        } else {
+          document.getElementById('login-msg').textContent = '❌ ' + data.detail;
+        }
+      } catch (e) {
+        document.getElementById('login-msg').textContent = '❌ Connection error. Please try again.';
       }
     };
 
-    // SIGNUP
-    document.getElementById('signup-btn').onclick = function () {
-      const user = document.getElementById('signup-username').value.trim();
-      const pass = document.getElementById('signup-password').value.trim();
-      if (user && pass) {
-        localStorage.setItem("bujji_user", user);
-        localStorage.setItem("bujji_pass", pass);
-        document.getElementById('signup-msg').textContent = "✅ Sign up successful! Please log in.";
-        setTimeout(showLogin, 1000);
-      } else {
-        document.getElementById('signup-msg').textContent = "⚠️ Please enter username and password.";
+    document.getElementById('signup-btn').onclick = async function () {
+      const username = document.getElementById('signup-username').value.trim();
+      const password = document.getElementById('signup-password').value.trim();
+      
+      if (!username || !password) {
+        document.getElementById('signup-msg').textContent = '⚠️ Please enter username and password.';
+        return;
+      }
+      
+      if (username.length < 3) {
+        document.getElementById('signup-msg').textContent = '⚠️ Username must be at least 3 characters.';
+        return;
+      }
+      
+      if (password.length < 6) {
+        document.getElementById('signup-msg').textContent = '⚠️ Password must be at least 6 characters.';
+        return;
+      }
+      
+      try {
+        const res = await fetch('/api/signup', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({username, password})
+        });
+        const data = await res.json();
+        
+        if (res.ok) {
+          document.getElementById('signup-msg').style.color = '#56ab2f';
+          document.getElementById('signup-msg').textContent = '✅ Account created! Redirecting to login...';
+          setTimeout(showLogin, 1500);
+        } else {
+          document.getElementById('signup-msg').style.color = '#cc2b5e';
+          document.getElementById('signup-msg').textContent = '❌ ' + data.detail;
+        }
+      } catch (e) {
+        document.getElementById('signup-msg').style.color = '#cc2b5e';
+        document.getElementById('signup-msg').textContent = '❌ Connection error. Please try again.';
       }
     };
+    
+    document.getElementById('login-password').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') document.getElementById('login-btn').click();
+    });
+    
+    document.getElementById('signup-password').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') document.getElementById('signup-btn').click();
+    });
   </script>
 </body>
 </html>

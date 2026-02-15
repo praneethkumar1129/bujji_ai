@@ -1,19 +1,17 @@
-# Ignore virtual environments
+# Virtual environments
 venv/
 env/
 
-
-# Ignore .env file with API keys
+# Environment variables
 .env
 
-# Ignore system files
+# Python cache
 __pycache__/
 *.pyc
+
+# IDE
+.vscode/
 .DS_Store
 
-.vscode/
-
-# Database and memory files
-bujji_ai.db
-memory.json
-test.db
+# Vercel
+.vercel

@@ -1,4 +1,3 @@
-# main.py
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -7,38 +6,19 @@ from pydantic import BaseModel
 from dotenv import load_dotenv
 from transformers import pipeline
 import os, requests
-import databases
-import sqlalchemy
+from motor.motor_asyncio import AsyncIOMotorClient
+from datetime import datetime
+from typing import List
+import hashlib
 
-# Load environment variables
 load_dotenv()
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+MONGODB_URL = os.getenv("MONGODB_URL")
 
-# Database setup
-DATABASE_URL = "sqlite:///./test.db"
-database = databases.Database(DATABASE_URL)
-metadata = sqlalchemy.MetaData()
-
-# Define tables
-users = sqlalchemy.Table(
-    "users",
-    metadata,
-    sqlalchemy.Column("id", sqlalchemy.Integer, primary_key=True),
-    sqlalchemy.Column("username", sqlalchemy.String, unique=True),
-    sqlalchemy.Column("password", sqlalchemy.String),
-)
-
-chat_history = sqlalchemy.Table(
-    "chat_history",
-    metadata,
-    sqlalchemy.Column("id", sqlalchemy.Integer, primary_key=True),
-    sqlalchemy.Column("username", sqlalchemy.String),
-    sqlalchemy.Column("message", sqlalchemy.String),
-)
-
-# Create the database
-engine = sqlalchemy.create_engine(DATABASE_URL)
-metadata.create_all(engine)
+client = AsyncIOMotorClient(MONGODB_URL)
+db = client.bujji_ai
+users_collection = db.users
+chats_collection = db.chats
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -49,14 +29,6 @@ app.add_middleware(
     allow_methods=["*"], allow_headers=["*"]
 )
 
-@app.on_event("startup")
-async def startup():
-    await database.connect()
-
-@app.on_event("shutdown")
-async def shutdown():
-    await database.disconnect()
-
 @app.get("/")
 async def serve_login():
     return FileResponse("login.html")
@@ -65,23 +37,15 @@ async def serve_login():
 async def serve_chat():
     return FileResponse("index.html")
 
-# Chat and translation models
-nllb = pipeline("translation", model="facebook/nllb-200-distilled-600M")
-NLLB_LANGS = {
-    "Spanish": "spa_Latn", "French": "fra_Latn", "German": "deu_Latn",
-    "Italian": "ita_Latn", "Portuguese": "por_Latn", "Russian": "rus_Cyrl",
-    "Chinese": "zho_Hans", "Japanese": "jpn_Jpan", "Korean": "kor_Hang",
-    "Arabic": "arb_Arab", "Hindi": "hin_Deva", "Telugu": "tel_Telu",
-    "Tamil": "tam_Taml", "Kannada": "kan_Knda", "Malayalam": "mal_Mlym",
-    "Bengali": "ben_Beng", "Gujarati": "guj_Gujr", "Punjabi": "pan_Guru",
-    "Urdu": "urd_Arab", "Turkish": "tur_Latn", "English": "eng_Latn"
-}
+@app.get("/api/health")
+async def health():
+    return {"status": "ok", "groq_key_configured": bool(GROQ_API_KEY)}
 
-# Models
+nllb = pipeline("translation", model="facebook/nllb-200-distilled-600M")
+
 class ChatRequest(BaseModel):
     message: str
     username: str
-    target_lang: str = "English"
 
 class TranslateRequest(BaseModel):
     text: str
@@ -91,12 +55,18 @@ class UserRequest(BaseModel):
     username: str
     password: str
 
-# API endpoints
+class ChatHistory(BaseModel):
+    username: str
+
+def hash_password(password: str) -> str:
+    return hashlib.sha256(password.encode()).hexdigest()
+
 @app.post("/api/chat")
 async def chat(req: ChatRequest):
     try:
-        await database.execute(chat_history.insert().values(username=req.username, message=req.message))
-
+        if not GROQ_API_KEY:
+            return JSONResponse(status_code=500, content={"error": "GROQ_API_KEY not configured"})
+        
         response = requests.post(
             "https://api.groq.com/openai/v1/chat/completions",
             headers={
@@ -104,38 +74,73 @@ async def chat(req: ChatRequest):
                 "Content-Type": "application/json"
             },
             json={
-                "model": "llama3-8b-8192",
+                "model": "llama-3.3-70b-versatile",
                 "messages": [
-                    {"role": "system", "content": "You are Bujji, a friendly AI assistant. Use emojis, structured format."},
+                    {"role": "system", "content": "You are Bujji, a friendly AI assistant. Use emojis and be helpful."},
                     {"role": "user", "content": req.message}
                 ]
-            }
+            },
+            timeout=30
         )
-        return JSONResponse({"response": response.json()["choices"][0]["message"]["content"]})
+        response.raise_for_status()
+        data = response.json()
+        ai_response = data["choices"][0]["message"]["content"]
+        
+        await chats_collection.insert_one({
+            "username": req.username,
+            "message": req.message,
+            "response": ai_response,
+            "timestamp": datetime.utcnow().isoformat()
+        })
+        
+        return {"response": ai_response}
+    except requests.exceptions.RequestException as e:
+        error_detail = str(e)
+        if hasattr(e.response, 'text'):
+            error_detail += f" - {e.response.text}"
+        print(f"API Error: {error_detail}")
+        return JSONResponse(status_code=500, content={"error": error_detail})
     except Exception as e:
+        print(f"Error: {e}")
         return JSONResponse(status_code=500, content={"error": str(e)})
 
 @app.post("/api/translate")
 async def translate(req: TranslateRequest):
     try:
-        # Accept target_lang directly as the code like tel_Telu
         result = nllb(req.text, src_lang="eng_Latn", tgt_lang=req.target_lang)
         return JSONResponse({"translation": result[0]["translation_text"]})
     except Exception as e:
         return JSONResponse(status_code=500, content={"translation": f"❌ Error: {str(e)}"})
 
-
-
 @app.post("/api/signup")
 async def signup(user: UserRequest):
-    query = users.insert().values(username=user.username, password=user.password)
-    await database.execute(query)
-    return JSONResponse({"message": "User created successfully!"})
+    if len(user.username) < 3:
+        raise HTTPException(status_code=400, detail="Username must be at least 3 characters")
+    if len(user.password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+    
+    existing = await users_collection.find_one({"username": user.username})
+    if existing:
+        raise HTTPException(status_code=400, detail="Username already exists")
+    
+    await users_collection.insert_one({
+        "username": user.username,
+        "password": hash_password(user.password),
+        "created_at": datetime.utcnow().isoformat()
+    })
+    return {"message": "User created successfully"}
 
 @app.post("/api/login")
 async def login(user: UserRequest):
-    query = users.select().where(users.c.username == user.username)
-    existing_user = await database.fetch_one(query)
-    if existing_user and existing_user['password'] == user.password:
-        return JSONResponse({"message": "Login successful!"})
-    raise HTTPException(status_code=400, detail="Invalid credentials")
+    existing = await users_collection.find_one({
+        "username": user.username,
+        "password": hash_password(user.password)
+    })
+    if not existing:
+        raise HTTPException(status_code=400, detail="Invalid username or password")
+    return {"message": "Login successful", "username": user.username}
+
+@app.post("/api/chat-history")
+async def get_chat_history(req: ChatHistory):
+    chats = await chats_collection.find({"username": req.username}).sort("timestamp", -1).to_list(50)
+    return {"chats": [{"id": str(chat["_id"]), "message": chat["message"], "response": chat["response"], "timestamp": chat["timestamp"]} for chat in chats]}
